@@ -1,0 +1,44 @@
+
+pipeline {
+  agent any
+  environment {
+    AWS_REGION = "eu-west-3"
+    REPO_NAME  = "hello-app"
+    ACCOUNT_ID = "061051220554" // Optionnel si tu utilises un Instance Profile
+    IMAGE_URI  = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}"
+    SSH_TARGET = "ubuntu@52.47.75.119"
+  }
+  stages {
+    stage('Checkout'){ steps { checkout scm } }
+
+    stage('Build'){
+      steps {
+        sh '''
+          cd app
+          docker build -t ${REPO_NAME}:${BUILD_NUMBER} .
+        '''
+      }
+    }
+
+    stage('ECR Login & Tag/Push'){
+      steps {
+        sh '''
+          aws ecr get-login-password --region ${AWS_REGION}             | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+          docker tag ${REPO_NAME}:${BUILD_NUMBER} ${IMAGE_URI}:${BUILD_NUMBER}
+          docker tag ${REPO_NAME}:${BUILD_NUMBER} ${IMAGE_URI}:latest
+          docker push ${IMAGE_URI}:${BUILD_NUMBER}
+          docker push ${IMAGE_URI}:latest
+        '''
+      }
+    }
+
+    stage('Deploy (Ansible)'){
+      steps {
+        sh '''
+          cd ansible
+          ansible-playbook -i inventory.ini playbooks/deploy-app.yml -e image=${IMAGE_URI}:latest
+        '''
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+
+- name: Create monitoring directory
+  become: true
+  file:
+    path: /opt/compose/monitoring
+    state: directory
+
+- name: Copy monitoring stack files
+  become: true
+  copy:
+    src: "{{ playbook_dir }}/../compose/monitoring/"
+    dest: /opt/compose/monitoring/
+    mode: "0644"
+
+- name: Start monitoring stack
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: /opt/compose/monitoring
+    state: present

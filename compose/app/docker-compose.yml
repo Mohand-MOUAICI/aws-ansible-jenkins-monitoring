@@ -1,0 +1,9 @@
+
+services:
+  app:
+    image: ${IMAGE:-REPLACE_WITH_ECR_URI}:latest
+    ports:
+      - "80:8000"
+    environment:
+      - APP_ENV=prod
+    restart: unless-stopped

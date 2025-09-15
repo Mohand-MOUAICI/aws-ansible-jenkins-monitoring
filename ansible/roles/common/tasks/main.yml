@@ -1,0 +1,8 @@
+
+- name: Ensure docker compose plugin present
+  become: true
+  apt:
+    name:
+      - docker-compose-plugin
+    state: present
+    update_cache: yes

@@ -1,0 +1,20 @@
+
+- name: Create compose app directory
+  become: true
+  file:
+    path: /opt/compose/app
+    state: directory
+
+- name: Deploy app docker-compose
+  become: true
+  copy:
+    src: "{{ playbook_dir }}/../compose/app/docker-compose.yml"
+    dest: /opt/compose/app/docker-compose.yml
+
+- name: Start/Update app stack
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: /opt/compose/app
+    env:
+      IMAGE: "{{ image }}"
+    state: present
