@@ -3,17 +3,15 @@ pipeline {
   environment {
     AWS_REGION = "eu-west-3"
     REPO_NAME  = "hello-app"
-    ACCOUNT_ID = "061051220554"           // ok même si l'instance a un rôle
+    ACCOUNT_ID = "061051220554"
     IMAGE_URI  = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}"
-    SSH_TARGET = "ubuntu@52.47.75.119"    // IP de l’EC2 APP
+    SSH_TARGET = "ubuntu@52.47.75.119"
   }
 
   stages {
-    stage('Checkout') {
-      steps { checkout scm }
-    }
+    stage('Checkout'){ steps { checkout scm } }
 
-    stage('Build') {
+    stage('Build'){
       steps {
         sh '''
           cd app
@@ -22,7 +20,7 @@ pipeline {
       }
     }
 
-    stage('ECR Login & Push') {
+    stage('ECR Login & Push'){
       steps {
         sh '''
           aws ecr get-login-password --region ${AWS_REGION} \
@@ -36,8 +34,7 @@ pipeline {
       }
     }
 
-    // (optionnel) vérifie qu'on se connecte bien en SSH avant Ansible
-    stage('Test SSH') {
+    stage('Test SSH'){ // tu peux le laisser ou le retirer, au choix
       steps {
         sshagent(credentials: ['APP_SSH_KEY']) {
           sh 'ssh -o StrictHostKeyChecking=no ${SSH_TARGET} "hostname && whoami"'
@@ -45,7 +42,7 @@ pipeline {
       }
     }
 
-    stage('Deploy (Ansible)') {
+    stage('Deploy (Ansible)'){
       steps {
         sshagent(credentials: ['APP_SSH_KEY']) {
           sh '''
