@@ -8,7 +8,7 @@
 - name: Deploy app docker-compose
   become: true
   copy:
-    src: "{{ playbook_dir }}/../compose/app/docker-compose.yml"
+    src: "{{ playbook_dir }}/../../compose/app/docker-compose.yml"
     dest: /opt/compose/app/docker-compose.yml
 
 - name: Start/Update app stack
