@@ -42,17 +42,18 @@ pipeline {
       }
     }
 
-    stage('Deploy (Ansible)'){
+    stage('Deploy (Ansible)') {
       steps {
-        sshagent(credentials: ['APP_SSH_KEY']) {
+        sshagent(credentials: ['ubuntu']) {
           sh '''
             cd ansible
-            export ANSIBLE_HOST_KEY_CHECKING=False
             ansible-playbook -i inventory.ini playbooks/deploy-app.yml \
               -e image=${IMAGE_URI}:latest
           '''
         }
       }
     }
+
+
   }
 }
