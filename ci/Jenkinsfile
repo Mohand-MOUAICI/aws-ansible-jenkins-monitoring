@@ -1,17 +1,19 @@
-
 pipeline {
   agent any
   environment {
     AWS_REGION = "eu-west-3"
     REPO_NAME  = "hello-app"
-    ACCOUNT_ID = "061051220554" // Optionnel si tu utilises un Instance Profile
+    ACCOUNT_ID = "061051220554"           // ok même si l'instance a un rôle
     IMAGE_URI  = "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}"
-    SSH_TARGET = "ubuntu@52.47.75.119"
+    SSH_TARGET = "ubuntu@52.47.75.119"    // IP de l’EC2 APP
   }
-  stages {
-    stage('Checkout'){ steps { checkout scm } }
 
-    stage('Build'){
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+
+    stage('Build') {
       steps {
         sh '''
           cd app
@@ -20,10 +22,12 @@ pipeline {
       }
     }
 
-    stage('ECR Login & Tag/Push'){
+    stage('ECR Login & Push') {
       steps {
         sh '''
-          aws ecr get-login-password --region ${AWS_REGION}             | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+          aws ecr get-login-password --region ${AWS_REGION} \
+            | docker login --username AWS --password-stdin ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+
           docker tag ${REPO_NAME}:${BUILD_NUMBER} ${IMAGE_URI}:${BUILD_NUMBER}
           docker tag ${REPO_NAME}:${BUILD_NUMBER} ${IMAGE_URI}:latest
           docker push ${IMAGE_URI}:${BUILD_NUMBER}
@@ -32,12 +36,25 @@ pipeline {
       }
     }
 
-    stage('Deploy (Ansible)'){
+    // (optionnel) vérifie qu'on se connecte bien en SSH avant Ansible
+    stage('Test SSH') {
       steps {
-        sh '''
-          cd ansible
-          ansible-playbook -i inventory.ini playbooks/deploy-app.yml -e image=${IMAGE_URI}:latest
-        '''
+        sshagent(credentials: ['APP_SSH_KEY']) {
+          sh 'ssh -o StrictHostKeyChecking=no ${SSH_TARGET} "hostname && whoami"'
+        }
+      }
+    }
+
+    stage('Deploy (Ansible)') {
+      steps {
+        sshagent(credentials: ['APP_SSH_KEY']) {
+          sh '''
+            cd ansible
+            export ANSIBLE_HOST_KEY_CHECKING=False
+            ansible-playbook -i inventory.ini playbooks/deploy-app.yml \
+              -e image=${IMAGE_URI}:latest
+          '''
+        }
       }
     }
   }
