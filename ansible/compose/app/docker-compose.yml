@@ -1,0 +1,7 @@
+services:
+  hello-app:
+    image: 061051220554.dkr.ecr.eu-west-3.amazonaws.com/hello-app:latest
+    ports:
+      - "80:8000"
+    restart: unless-stopped
+    pull_policy: always
