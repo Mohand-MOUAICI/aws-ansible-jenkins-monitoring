@@ -12,14 +12,6 @@
     dest: /root/app/docker-compose.yml
     mode: "0644"
 
-# (optionnel mais recommandé) login ECR avant pull si le serveur n’a pas d’instance profile
-- name: ECR login
-  become: true
-  shell: |
-    aws ecr get-login-password --region eu-west-3 \
-    | docker login --username AWS --password-stdin 061051220554.dkr.ecr.eu-west-3.amazonaws.com
-  changed_when: false
-
 - name: Start/Update stack
   become: true
   args:
