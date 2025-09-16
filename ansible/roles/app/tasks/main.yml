@@ -1,17 +1,27 @@
 - name: Create compose app directory
-  file:
-    path: /opt/app
-    state: directory
-    mode: '0755'
   become: true
+  file:
+    path: /root/app
+    state: directory
+    mode: "0755"
 
 - name: Deploy app docker-compose
-  copy:
-    src: "{{ playbook_dir }}/../../compose/app/docker-compose.yml"
-    dest: /opt/app/docker-compose.yml
-    mode: '0644'
   become: true
+  copy:
+    src: "{{ playbook_dir }}/../compose/app/docker-compose.yml"
+    dest: /root/app/docker-compose.yml
+    mode: "0644"
+
+# (optionnel mais recommandé) login ECR avant pull si le serveur n’a pas d’instance profile
+- name: ECR login
+  become: true
+  shell: |
+    aws ecr get-login-password --region eu-west-3 \
+    | docker login --username AWS --password-stdin 061051220554.dkr.ecr.eu-west-3.amazonaws.com
+  changed_when: false
 
 - name: Start/Update stack
-  command: docker compose -f /opt/app/docker-compose.yml up -d
   become: true
+  args:
+    chdir: /root/app
+  shell: docker compose up -d
